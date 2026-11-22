@@ -1,0 +1,33 @@
+# --- secrets ---
+.env
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- virtualenv ---
+.venv/
+venv/
+
+# --- runtime data ---
+# mock database (regenerate with: python -m db.init_db) and the agent's
+# persistent memory stores (SQLite kv / milvus-lite / GraphML graphs)
+data/
+
+# --- streamlit ---
+.streamlit/secrets.toml
+
+# --- logs & temp ---
+*.log
+*.tmp
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini

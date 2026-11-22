@@ -1,0 +1,11 @@
+streamlit>=1.30
+pandas>=2.0
+python-dotenv>=1.0
+openjiuwen>=0.1.21
+JiuwenMemory[sqlite]>=0.2.1
+milvus-lite>=3.2
+pymilvus>=2.5
+# nano-graphrag is used ONLY as a GraphML graph-store backend; install it
+# without its heavy pipeline deps:  pip install nano-graphrag --no-deps
+nano-graphrag>=0.0.8
+networkx>=3.0
