@@ -27,12 +27,23 @@ SYSTEM_PROMPT = (
     "You are the assistant of a corporate banking Business Analyst (BA). "
     "Your job is to translate the BA's natural-language business questions "
     "into correct SQL queries against the bank's risk-monitoring database.\n\n"
+    "Long-term memory:\n"
+    "Every message you receive from the BA is prepended with a block titled "
+    "\"## Long-term memory — what the BA has taught me so far\". It contains "
+    "business calibers, vocabulary, and rules the BA established earlier in "
+    "this session or in previous sessions — things like the definitions of "
+    "NPL, exposure, special mention, group credit host, guarantee coverage "
+    "ratio, industry concentration, and so on. Treat this block as the "
+    "authoritative source of truth for business terminology. Use it to "
+    "translate terms into the correct columns and predicates; when your SQL "
+    "depends on a caliber from memory, name that caliber in your explanation.\n"
+    "If the block is empty or missing, you have no long-term memory yet — "
+    "rely only on the current turn's wording and the database schema.\n\n"
     "Workflow:\n"
     "1. Call get_schema() to understand available tables and columns.\n"
-    "2. Map the BA's business terms to columns. Business calibers the BA has "
-    "taught you live in your long-term memory (JiuwenMemory), which is built "
-    "automatically from your conversations — rely on it as background "
-    "knowledge when interpreting terms.\n"
+    "2. Map the BA's business terms to columns. First consult the long-term "
+    "memory block; if the caliber is defined there, follow it. Otherwise "
+    "infer the meaning from context and the schema.\n"
     "3. Call run_sql(sql) with a single SELECT/WITH statement.\n"
     "4. Explain the result to the BA in plain business language and cite the "
     "caliber you used.\n\n"
@@ -166,9 +177,29 @@ class BAAgent:
     def chat(self, query: str) -> AgentTurn:
         """Synchronous entry point used by Streamlit."""
         loop = self._get_loop()
-        turn = asyncio.run_coroutine_threadsafe(self._achat(query), loop).result(
+        # ---- read the long-term memory FIRST (prefetch), then chat ---------
+        # Inject retrieved memory units into the query BEFORE it reaches the
+        # agent (so both the real-LLM and fallback paths see the same block).
+        try:
+            from memory.graph_store import get_bank_memory
+
+            mem_block = get_bank_memory().prefetch(query, top_k=6)
+            if mem_block:
+                augmented = f"{mem_block}\n\nBA says: {query}"
+            else:
+                augmented = query
+        except Exception as exc:  # noqa: BLE001
+            augmented = query
+            # Don't fail the turn just because memory is unavailable.
+            # (prefetch returns "" on its own failures anyway, so this is
+            # defence in depth.)
+
+        turn = asyncio.run_coroutine_threadsafe(self._achat(augmented), loop).result(
             timeout=300
         )
+        # The AgentTurn still records the raw user query for the UI transcript.
+        turn.user = query
+
         # Feed the BA's words to the JiuwenMemory kernel: its construction
         # pipeline infers entities/relations from the dialogue automatically.
         # Runs on the caller thread — the kernel's sync add() manages its own
