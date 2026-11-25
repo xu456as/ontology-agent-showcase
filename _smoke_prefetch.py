@@ -20,7 +20,11 @@ _PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _PROJECT_ROOT)
 
 from dotenv import load_dotenv
-load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
+load_dotenv(
+    os.path.join(_PROJECT_ROOT, ".env"),
+    override=os.environ.get("LOAD_DOTENV_OVERRIDE", "false").lower()
+    in ("1", "true", "yes", "on"),
+)
 
 from memory.graph_store import get_bank_memory
 from agent.ba_agent import get_ba_agent

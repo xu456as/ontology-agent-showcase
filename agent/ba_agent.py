@@ -21,7 +21,10 @@ from dotenv import load_dotenv
 
 from .tools import make_tool_cards
 
-load_dotenv()
+load_dotenv(
+    override=os.environ.get("LOAD_DOTENV_OVERRIDE", "false").lower()
+    in ("1", "true", "yes", "on")
+)
 
 SYSTEM_PROMPT = (
     "You are the assistant of a corporate banking Business Analyst (BA). "

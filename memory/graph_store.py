@@ -50,7 +50,10 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(
+    override=os.environ.get("LOAD_DOTENV_OVERRIDE", "false").lower()
+    in ("1", "true", "yes", "on")
+)
 
 from jiuwen_memory.api import (
     EvolveMode,

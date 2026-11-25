@@ -21,7 +21,13 @@ from agent import get_ba_agent
 
 # Load project-root .env (db module also loads it; this makes APP_TITLE
 # available at the top of app.py).
-load_dotenv()
+# override=False → any env var already set in the process (e.g. docker run -e,
+# GitHub Actions env:, K8s envFrom) wins over .env file values. .env only fills
+# in what's missing. Set LOAD_DOTENV_OVERRIDE=1 to flip back to override mode.
+load_dotenv(
+    override=os.environ.get("LOAD_DOTENV_OVERRIDE", "false").lower()
+    in ("1", "true", "yes", "on")
+)
 
 APP_TITLE = os.environ.get("APP_TITLE", "Ontology AI Agent · Risk Monitoring Demo")
 

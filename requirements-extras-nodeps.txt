@@ -1,0 +1,14 @@
+# Packages that MUST be installed WITHOUT their own dependency tree.
+# Installed by scripts/install_deps.py via:
+#     pip install --no-deps -r requirements-extras-nodeps.txt
+#
+# Do NOT `pip install -r` this file directly — that would pull nano-graphrag's
+# heavy pipeline dependencies (tiktoken, torch, etc.) which the project does
+# not use. The jiuwen_memory graph backend only needs the package present so
+# that jiuwen_memory.storage.graph_impl.nano_graphrag_graph can be imported.
+#
+# Runtime deps that nano-graphrag actually USES at import time (not listed in
+# its Requires-Dist because the backend shim only touches storage code paths)
+# are already satisfied by requirements.txt (notably networkx >= 3.0).
+
+nano-graphrag>=0.0.8
