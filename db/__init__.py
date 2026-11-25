@@ -11,7 +11,11 @@ from dotenv import load_dotenv
 
 # Resolve project root (one level above this `db` package) and load `.env`.
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
+load_dotenv(
+    os.path.join(_PROJECT_ROOT, ".env"),
+    override=os.environ.get("LOAD_DOTENV_OVERRIDE", "false").lower()
+    in ("1", "true", "yes", "on"),
+)
 
 # Default DB path relative to project root, overridable via env var.
 _DEFAULT_DB = os.path.join(_PROJECT_ROOT, "data", "banking_risk.db")

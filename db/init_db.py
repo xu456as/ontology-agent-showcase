@@ -18,7 +18,11 @@ from dotenv import load_dotenv
 
 # Load .env from project root so DB_PATH stays in sync with app.py.
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
+load_dotenv(
+    os.path.join(_PROJECT_ROOT, ".env"),
+    override=os.environ.get("LOAD_DOTENV_OVERRIDE", "false").lower()
+    in ("1", "true", "yes", "on"),
+)
 
 _DEFAULT_DB = os.path.join(_PROJECT_ROOT, "data", "banking_risk.db")
 DB_PATH = os.path.abspath(os.environ.get("DB_PATH", _DEFAULT_DB))

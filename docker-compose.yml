@@ -1,0 +1,45 @@
+# Local dev / preview — mounts the host `data/` so SQLite + Milvus + GraphML
+# survive `docker compose down`.
+#
+# Run:
+#   # Real LLM
+#   OPENAI_API_KEY=sk-xxx OPENAI_API_BASE=https://api.openai.com/v1 \
+#     docker compose up --build
+#
+#   # Deterministic fallback (no key needed, Agent answers with rule-based SQL)
+#   docker compose up --build
+#
+#   # Override model / port
+#   LLM_MODEL=gpt-4o LLM_PROVIDER=deepseek \
+#     docker compose up --build -p 8502:8501
+#
+# The env vars ${...} below fall through to host values when present and
+# default to sensible values otherwise. Any var with a trailing `:-` (empty
+# default) will NOT be set in the container when unset on the host — this
+# matters because python-dotenv in `override=False` mode (project default)
+# means the container's process env ALWAYS wins over values in .env.
+services:
+  app:
+    build: .
+    image: ontology-agent:local
+    container_name: ontology-agent
+    restart: unless-stopped
+    ports:
+      - "${PORT_HOST:-8501}:${PORT:-8501}"
+    environment:
+      # --- LLM (set any of these to empty string to disable LLM mode) ---
+      LLM_PROVIDER: "${LLM_PROVIDER:-openai}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      OPENAI_API_BASE: "${OPENAI_API_BASE:-}"
+      LLM_MODEL: "${LLM_MODEL:-gpt-4o-mini}"
+      # --- DB / memory persistence ---
+      DB_PATH: "${DB_PATH:-./data/banking_risk.db}"
+      MILVUS_URI: "${MILVUS_URI:-}"
+      # --- App chrome ---
+      APP_TITLE: "${APP_TITLE:-Ontology AI Agent · Risk Monitoring Demo}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      PORT: "${PORT:-8501}"
+    volumes:
+      # Project data (SQLite + Milvus + GraphML graphs) persist across restarts
+      # and can be inspected directly from the host.
+      - ./data:/app/data

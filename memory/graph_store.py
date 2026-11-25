@@ -50,7 +50,10 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(
+    override=os.environ.get("LOAD_DOTENV_OVERRIDE", "false").lower()
+    in ("1", "true", "yes", "on")
+)
 
 from jiuwen_memory.api import (
     EvolveMode,
@@ -625,6 +628,59 @@ class BankMemory:
         return f"terminology: +{len(nodes)} entities, +{len(edges)} relations"
 
     # -- read --------------------------------------------------------------------
+
+    # 给 Agent 的检索入口：用 BA 这轮的话当 query 去内核混合召回（关键词 + 向量 + 图），
+    # 把命中的记忆单元拼成一段自然语言返回，供 Agent 当作 long-term context 使用。
+    # 不匹配不报错，返回空串——Agent 当没这回事。
+    def prefetch(self, query: str, top_k: int = 6) -> str:
+        self._ensure_init()
+        text = (query or "").strip()
+        if not text:
+            return ""
+        try:
+            from jiuwen_memory.api import (
+                Context,
+                DisclosureLevel,
+                internal_context,
+            )
+
+            security = internal_context(_AUTHENTICATOR)
+            ctx = Context(scope=self._scope)
+            # L0=摘要(50-100字) 轻量，够用；max_tokens 自适应预算在 ADAPTIVE 模式下
+            # 由内核自己选 L0/L1/L2，这里直接要 L0 摘要最省 token。
+            result = self._api.search(
+                text,
+                ctx,
+                security=security,
+                top_k=min(max(top_k, 1), 20),
+                disclosure=DisclosureLevel.L0,
+            )
+        except Exception as exc:  # noqa: BLE001
+            return ""
+        items = getattr(result, "items", None) or []
+        if not items:
+            return ""
+        # 用 abstract(L0)，空就降级 overview(L1)，再空 content(L2)
+        lines: list[str] = []
+        seen: set[str] = set()
+        for it in items:
+            snippet = (
+                getattr(it, "abstract", "")
+                or getattr(it, "overview", "")
+                or getattr(it, "content", "")
+                or ""
+            ).strip()
+            snippet = " ".join(snippet.split())  # 折叠空白
+            if not snippet or snippet in seen:
+                continue
+            seen.add(snippet)
+            lines.append(snippet[:200])  # 单条硬上限，防被长单元撑爆
+        if not lines:
+            return ""
+        # 只取前 6 条（top_k 默认值），并加一条简短标题让 Agent 知道这段是什么
+        head = "## Long-term memory — what the BA has taught me so far\n"
+        return head + "\n".join(f"- {ln}" for ln in lines[:top_k])
+
     def list_entities(self) -> list[GraphNodeView]:
         """Nodes of the INDEX graph (JiuwenMemory memory units)."""
         self._ensure_init()
