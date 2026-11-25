@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1.6
 # ontology-agent-showcase — Streamlit demo for a corporate credit risk agent.
 #
 # Build:
@@ -32,9 +31,18 @@ ENV PYTHON=python3
 COPY requirements.txt ./
 COPY requirements-extras-nodeps.txt ./
 COPY scripts/install_deps.sh scripts/
-RUN bash scripts/install_deps.sh \
- && python -c "import nano_graphrag, openjiuwen, jiuwen_memory, streamlit; print('deps ok')" \
- && rm -rf /root/.cache/pip
+RUN bash scripts/install_deps.sh && python -c '
+import importlib.util, sys
+modules = ["streamlit", "pandas", "openjiuwen", "jiuwen_memory",
+           "pymilvus", "milvus_lite", "nano_graphrag", "networkx"]
+ok = True
+for m in modules:
+    present = importlib.util.find_spec(m) is not None
+    tag = "ok" if present else "MISSING"
+    print(f"[{tag}] {m}")
+    ok = ok and present
+sys.exit(0 if ok else 1)
+' && rm -rf /root/.cache/pip
 
 # ---- layer 2: app source ----
 COPY . .
