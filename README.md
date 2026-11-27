@@ -159,6 +159,16 @@ If `streamlit` is not found on PATH, use:
 python -m streamlit run app.py
 ```
 
+### docker run
+```bash
+docker run -d --restart unless-stopped `
+  -p 8501:8501 `
+  --env-file .\.env `
+  -v D:/workspace/ontology_helper_case/ontology-agent-showcase/data:/app/data `
+  ghcr.io/xu456as/ontology-agent-showcase:0.0.1
+```
+
+
 ---
 
 ## Database Schema
