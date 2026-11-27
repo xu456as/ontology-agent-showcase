@@ -1,9 +1,7 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches: [main, master]
-    tags: ["v*"]
+  # Build only on manual run — pushing commits/tags no longer triggers a build.
   workflow_dispatch:
     inputs:
       version:
@@ -41,11 +39,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # ------------------------------------------------------------------
-      # Tag computation:
-      #   - v* tag push  → ghcr.io/<owner>/<repo>:<tag>        (e.g. v1.0.0)
-      #   - main/master  → ghcr.io/<owner>/<repo>:sha_<short>  + :latest
-      #   - workflow_dispatch with version input → adds ghcr.io/<owner>/<repo>:<version>
-      #     (branch/sha/latest rules still apply, so a manual run also refreshes those)
+      # Tag computation (manual dispatch only):
+      #   - version input  → ghcr.io/<owner>/<repo>:<version>   (e.g. v1.2.0)
+      #   - current branch → ghcr.io/<owner>/<repo>:<branch>
+      #   - always         → ghcr.io/<owner>/<repo>:sha_<commit>
+      #   - default branch → ghcr.io/<owner>/<repo>:latest
       # ------------------------------------------------------------------
       - name: Compute image tags
         id: meta
