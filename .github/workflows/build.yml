@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Semver tag override (e.g. v1.2.0). If empty, uses commit SHA + latest."
+        description: "Image tag to push (e.g. v1.2.0 or 1.2.0-rc1). If empty, derives tag from git ref + commit SHA."
         required: false
         type: string
 
@@ -44,7 +44,8 @@ jobs:
       # Tag computation:
       #   - v* tag push  → ghcr.io/<owner>/<repo>:<tag>        (e.g. v1.0.0)
       #   - main/master  → ghcr.io/<owner>/<repo>:sha_<short>  + :latest
-      #   - workflow_dispatch with version input → same as a tag push
+      #   - workflow_dispatch with version input → adds ghcr.io/<owner>/<repo>:<version>
+      #     (branch/sha/latest rules still apply, so a manual run also refreshes those)
       # ------------------------------------------------------------------
       - name: Compute image tags
         id: meta
@@ -52,6 +53,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            type=raw,value=${{ inputs.version }},enable=${{ inputs.version != '' }}
             type=ref,event=tag
             type=ref,event=branch
             type=sha,format=long,prefix=sha_
